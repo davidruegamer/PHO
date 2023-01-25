@@ -1,4 +1,3 @@
-devtools::load_all("~/NSL/deepregression")
 library("mgcv")
 library("parallel")
 
@@ -19,7 +18,7 @@ colnames(data) <- c(paste0("x", 1:max(settings$p)),
                     paste0("z", 1:max(settings$p_nn)))
 
 nr_reps_sim <- 20
-nr_cores <- 1
+nr_cores <- 4
 max_epochs <- 5000
 
 lotf <- list(function(x) cos(5*x),
@@ -48,7 +47,7 @@ form_fun <- function(p, p_nn, nonlin, edfs){
   str_feat_nn <- paste(paste0("x", 1:p), collapse = ", ")
   if(p_nn > 0){
     ustr_feat <- paste(paste0("z", 1:p_nn), collapse = ", ")
-    inp_deep <- paste0(str_feat, " + ", ustr_feat)
+    inp_deep <- paste0(str_feat, ", ", ustr_feat)
   }else{
     inp_deep <- str_feat_nn
   }
@@ -84,7 +83,7 @@ true_mod_fun <- function(p, nonlin){
 
 res_list <- list()
 
-for(i in 13:nrow(settings)){
+for(i in 1:nrow(settings)){
   
   n <- settings$n[i]
   p <- settings$p[i]
@@ -103,6 +102,8 @@ for(i in 13:nrow(settings)){
   )
   
   res <- mclapply(1:nr_reps_sim, function(j){
+    
+    devtools::load_all("~/NSL/deepregression")
     
     set.seed(j)
     
@@ -210,7 +211,7 @@ for(i in 13:nrow(settings)){
 
 }
 
-saveRDS(res_list, file="results_sim_ortho_nonlin.RDS")
+saveRDS(res_list, file="results_sim_ortho.RDS")
 
 
 ######################## Analysis #######################
@@ -251,18 +252,24 @@ if(FALSE){
       data.frame(ooz = length(rrl$histories$ooz$metrics$val_loss),
                  woz = length(rrl$histories$woz$metrics$val_loss)))), rl$setting)))
   
+  colnames(res_conv)[5] <- "q"
+  
   res_conv %>% mutate(
     diff_iter = ooz-woz
-  ) %>% ggplot(aes(y = diff_iter, x = interaction(p,p+p_nn, sep = " / "),
-                   colour = n)) + geom_abline(intercept = 0, linetype = 2) +
-    geom_boxplot() + 
+  ) %>% filter((nonlin==0 & n==100) | (nonlin==1 & n==1000)) %>% ggplot() + 
+    geom_abline(intercept = 0, linetype = 2) +
+    # geom_boxplot(aes(x = factor(p), y = diff_iter, fill = factor(q))) +
+    geom_smooth(aes(x = p, y = diff_iter, colour = factor(q))) +
+    facet_grid( ~ n, labeller = labeller(n = label_both)) +
     scale_colour_manual(values = c("#009E73", "#D55E00")) + 
     theme_bw() + 
     theme(legend.position="bottom",
-          text = element_text(size = 16)) + 
-    ylab("Additional iterations with constraint") + xlab("p / q") 
+          text = element_text(size = 14)) + 
+    ylab("Additional iterations with constraint") + xlab("#Features p") + 
+    scale_x_continuous(trans = "log10") +
+    guides(colour=guide_legend(title="#Unstructured features q"))
   
-  ggsave(width = 6, height = 4, filename = "convergence.pdf")
+  ggsave(width = 5, height = 4, filename = "convergence.pdf")
   
   ### non-linear results
   
@@ -337,14 +344,14 @@ if(FALSE){
   ggsave(width = 6, height = 4, filename = "results_nonlinear.pdf")
   
   res_nonlin %>% filter(p==10, p_nn==0, n==1000) %>% 
-    filter(!effect%in%c("x0","x9")) %>% 
+    filter(!effect%in%c("x0","x7","x8","x9")) %>% 
     pivot_longer(unconstrained:truth) %>% 
     arrange(name, effect, id, xvalue) %>% 
     group_by(effect, id, n, p, p_nn, nonlin, name) %>% 
     mutate(value = ifelse(name=="truth", value-mean(value), value)) %>% 
     ungroup() %>% 
     ggplot(aes(x = xvalue, y = value, colour = name, group = interaction(id, name))) + 
-    geom_line(alpha=0.5) + theme_bw() + facet_wrap(~effect, scales="free", ncol=4) + 
+    geom_line(alpha=0.5) + theme_bw() + facet_wrap(~effect, scales="free", ncol=3) + 
     scale_colour_manual(values = c("#009E73", "#E69F00", "#999999", "#CC79A7", "#FF0000", "#56B4E9"))+
     theme(legend.title = element_blank(),
           text = element_text(size = 14)) + xlab("Feature value") + ylab("Partial effect") + 
@@ -352,6 +359,6 @@ if(FALSE){
                                  nrow=1,byrow=TRUE)) + 
     theme(legend.position="bottom") 
     
-  ggsave(width = 8, height = 4, filename = "results_splines.pdf")
+  ggsave(width = 6.5, height = 4, filename = "results_splines.pdf")
   
 }

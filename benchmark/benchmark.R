@@ -1,7 +1,7 @@
 ############################# Loading libraries #############################
 library(caret)
 library(parallel)
-nr_cores <- 10
+nr_cores <- 5
 tryNA <- function(expr) tryCatch(expr, error = function(e) NA)
 ############################# Data loader #################################
 data_reader <- function(

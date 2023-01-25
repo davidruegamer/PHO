@@ -1,6 +1,6 @@
 ############################# Loading libraries #############################
 library(devtools)
-library(deepregression)
+devtools::load_all("~/NSL/deepregression")
 
 ### architectures considered
 
@@ -146,7 +146,31 @@ ono <- function(architecture, trainX, trainY, testX, ...){
   
   pred <- dr(form, deep_mod_list = list(deep_mod = deep_mod),
              trainX, trainY, testX, 
-             oz_option = orthog_control(orthogonalize = TRUE), 
+             oz_option = orthog_control(orthogonalize = TRUE,
+                                        deactivate_oz_at_test = FALSE), 
+             ...)
+  
+  return(pred)
+  
+  
+}
+
+############################# ONION #############################
+onion <- function(architecture, trainX, trainY, testX, ...){
+  
+  deep_mod <- get_deep_mod(architecture)
+  
+  Vs <- colnames(trainX)
+  
+  form <- paste0("~ 1 + ",
+                 paste(paste0("s(", Vs, ")"), collapse=" + "),
+                 " + deep_mod(",
+                 paste(Vs, collapse=", "), ")")
+  
+  pred <- dr(form, deep_mod_list = list(deep_mod = deep_mod),
+             trainX, trainY, testX, 
+             oz_option = orthog_control(orthogonalize = TRUE,
+                                        deactivate_oz_at_test = TRUE), 
              ...)
   
   return(pred)
