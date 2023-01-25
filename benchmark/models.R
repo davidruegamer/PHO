@@ -1,6 +1,6 @@
 ############################# Loading libraries #############################
 library(devtools)
-devtools::load_all("~/NSL/deepregression")
+library(deepregression)
 
 ### architectures considered
 
@@ -32,8 +32,6 @@ get_deep_mod <- function(architecture = c("a", "b", "c", "d")){
   
   return(deep_mod)
 }
-
-# optimizer_alig <- reticulate::import_from_path("codes", paste0(getwd(), "/.."))
 
 ############################# Generic Normal (Deep) Regression ################################
 dr <- function(formla, trainX, trainY, testX,

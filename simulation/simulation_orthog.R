@@ -103,7 +103,7 @@ for(i in 1:nrow(settings)){
   
   res <- mclapply(1:nr_reps_sim, function(j){
     
-    devtools::load_all("~/NSL/deepregression")
+    library(deepregression)
     
     set.seed(j)
     
