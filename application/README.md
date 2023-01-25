@@ -1,8 +1,7 @@
-# Semi-Structured ResNet for Melanoma Classification
+# Semi-Structured Models for COVID-19 data
 
 Steps:
 
- 0. get data from https://challenge2020.isic-archive.com/ into ./data/
- 1. R preprocess-1.R
- 2. python preprocess-2.py
- 3. R analysis.R
+ 0. get data from https://storage.googleapis.com/covid19-open-data/v3/aggregated.csv.gz and unzip
+ 1. R subset_data.R
+ 2. R analysis.R
