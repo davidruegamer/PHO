@@ -343,16 +343,27 @@ if(FALSE){
   
   ggsave(width = 6, height = 4, filename = "results_nonlinear.pdf")
   
-  res_nonlin %>% filter(p==10, p_nn==0, n==1000) %>% 
-    filter(!effect%in%c("x0","x7","x8","x9")) %>% 
+  res_nonlin_agg <- res_nonlin %>% filter(p==10, p_nn==0, n==1000) %>% 
+    filter(!effect%in%c("x0","x7","x8","x9")) %>%
     pivot_longer(unconstrained:truth) %>% 
     arrange(name, effect, id, xvalue) %>% 
-    group_by(effect, id, n, p, p_nn, nonlin, name) %>% 
+    group_by(effect, id, name) %>% 
     mutate(value = ifelse(name=="truth", value-mean(value), value)) %>% 
     ungroup() %>% 
-    ggplot(aes(x = xvalue, y = value, colour = name, group = interaction(id, name))) + 
-    geom_line(alpha=0.5) + theme_bw() + facet_wrap(~effect, scales="free", ncol=3) + 
-    scale_colour_manual(values = c("#009E73", "#E69F00", "#999999", "#CC79A7", "#FF0000", "#56B4E9"))+
+    group_by(name, effect, xvalue) %>% 
+    summarise(
+      meanval = mean(value),
+      uppval = quantile(value, probs = 0.95),
+      lowval = quantile(value, probs = 0.05)
+    ) %>% 
+    ungroup()
+  
+  ggplot(res_nonlin_agg, aes(x = xvalue, y = meanval, colour = name, group = name)) + 
+    geom_line(linewidth = 1.5) + 
+    # geom_ribbon(aes(ymin = lowval, ymax = uppval, fill = name), alpha = 0.1) + 
+    theme_bw() + facet_wrap(~effect, scales="free", ncol=3) + 
+    scale_colour_manual(values = c("#009E73", "#E69F00", "#999999", "#CC79A7", "#FF0000", "#56B4E9")) +
+    scale_fill_manual(values = c("#009E73", "#E69F00", "#999999", "#CC79A7", "#FF0000", "#56B4E9")) +
     theme(legend.title = element_blank(),
           text = element_text(size = 14)) + xlab("Feature value") + ylab("Partial effect") + 
     guides(colour = guide_legend(override.aes = list(alpha=1, size=1.1),
